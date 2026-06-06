@@ -5,25 +5,20 @@
 
 **Course:** Data Structures & Algorithms  
 **Project Theme:** D1 - Basic Search Engine (Inverted Index)  
-**Submission Date:** [Current Date]  
+**Submission Date:** June 10, 2024  
 **Institution:** [Your University Name]  
 
 ---
 
 ## Team Members
 
-| Role | Name | Contribution |
-|------|------|--------------|
-| Team Lead | [Name] | Project coordination, system integration |
-| Design Lead | [Name] | Chapter 23 methodology, architecture |
-| DSA Lead | [Name] | Hash map, heap, graph implementation |
-| Algorithms Lead | [Name] | Merge sort, binary search, optimization |
-| Backend Developer | [Name] | MySQL, API, engine logic |
-| Frontend Developer | [Name] | Web interface, CSS, JavaScript |
-| Testing Lead | [Name] | Test cases, QA, validation |
-| Documentation Lead | [Name] | Report, README, diagrams |
-| Performance Lead | [Name] | Benchmarking, complexity analysis |
-| Demo Presenter | [Name] | Video recording, presentation |
+| Role | Name | Registration Number | Contribution |
+|------|------|---------------------|--------------|
+| Team Lead & Backend Developer | Arcel Ndala | BIT/2024/44434 | Project coordination, MySQL, API, engine logic, GitHub |
+| DSA & Algorithms Lead | Chan Ring | BIT/2024/46674 | Hash map, stack, queue, heap, graph, merge sort, binary search |
+| Frontend & UI Lead | Lucy Mbugua | BIT/2024/44576 | Web interface, CSS, JavaScript, complexity visualization |
+| Testing & Performance Lead | Humprhey Mungai | BIT/2024/42345 | Test cases, QA, benchmarking, complexity analysis |
+| Documentation & Demo Lead | Shanice Anna | BIT/2024/43110 | Design report, README, diagrams, video, submission |
 
 ---
 
@@ -435,65 +430,104 @@ text
 8. Data Structures Implementation
 8.1 Hash Map (Inverted Index)
 File: src/InvertedIndex.php
-
-Implementation:
+Owner: Chan Ring (DSA & Algorithms Lead)
 
 php
 class InvertedIndex {
     private array $index = [];  // term → [docIds]
     
     public function addTerm(string $term, int $documentId): void {
-        $this->index[$term][] = $documentId;
+        if (!isset($this->index[$term])) {
+            $this->index[$term] = [];
+        }
+        if (!in_array($documentId, $this->index[$term])) {
+            $this->index[$term][] = $documentId;
+        }
     }
     
     public function getDocumentsForTerm(string $term): array {
         return $this->index[$term] ?? [];
+    }
+    
+    public function searchAnd(array $terms): array {
+        if (empty($terms)) return [];
+        $results = null;
+        foreach ($terms as $term) {
+            $docs = $this->getDocumentsForTerm($term);
+            if (empty($docs)) return [];
+            if ($results === null) {
+                $results = $docs;
+            } else {
+                $results = array_intersect($results, $docs);
+            }
+            if (empty($results)) return [];
+        }
+        return $results ?? [];
     }
 }
 Complexity: O(1) average lookup time
 
 8.2 Stack (Search History)
 File: src/SearchHistory.php
-
-Implementation:
+Owner: Chan Ring (DSA & Algorithms Lead)
 
 php
 class SearchHistory {
     private array $history = [];
+    private int $maxSize = 10;
     
     public function push(string $query): void {
-        array_push($this->history, $query);
+        array_push($this->history, [
+            'query' => $query,
+            'timestamp' => date('Y-m-d H:i:s')
+        ]);
+        if (count($this->history) > $this->maxSize) {
+            array_shift($this->history);
+        }
     }
     
     public function pop(): ?array {
         return array_pop($this->history);
+    }
+    
+    public function getAll(): array {
+        return array_reverse($this->history);
     }
 }
 Complexity: O(1) push/pop
 
 8.3 Queue (Indexing Jobs)
 File: src/IndexQueue.php
-
-Implementation:
+Owner: Chan Ring (DSA & Algorithms Lead)
 
 php
 class IndexQueue {
     private SplQueue $queue;
+    
+    public function __construct() {
+        $this->queue = new SplQueue();
+    }
     
     public function enqueue(array $document): void {
         $this->queue->enqueue($document);
     }
     
     public function dequeue(): ?array {
-        return $this->queue->dequeue();
+        if (!$this->isEmpty()) {
+            return $this->queue->dequeue();
+        }
+        return null;
+    }
+    
+    public function isEmpty(): bool {
+        return $this->queue->isEmpty();
     }
 }
 Complexity: O(1) enqueue/dequeue
 
 8.4 Heap (Top-K Results)
 File: src/TopResultsHeap.php
-
-Implementation:
+Owner: Chan Ring (DSA & Algorithms Lead)
 
 php
 class TopResultsHeap extends SplMaxHeap {
@@ -501,10 +535,19 @@ class TopResultsHeap extends SplMaxHeap {
         return $a['score'] <=> $b['score'];
     }
     
+    public function addResult(int $documentId, float $score, string $title): void {
+        $this->insert([
+            'document_id' => $documentId,
+            'score' => $score,
+            'title' => $title
+        ]);
+    }
+    
     public function getTopK(int $k): array {
         $results = [];
-        for ($i = 0; $i < $k && !$this->isEmpty(); $i++) {
-            $results[] = $this->extract();
+        $heapCopy = clone $this;
+        for ($i = 0; $i < $k && !$heapCopy->isEmpty(); $i++) {
+            $results[] = $heapCopy->extract();
         }
         return $results;
     }
@@ -513,22 +556,34 @@ Complexity: O(log n) extract max
 
 8.5 Graph (Word Relationships)
 File: src/WordGraph.php
-
-Implementation:
+Owner: Chan Ring (DSA & Algorithms Lead)
 
 php
 class WordGraph {
     private array $adjacencyList = [];
     
     public function addRelationship(string $word1, string $word2): void {
-        $this->adjacencyList[$word1][] = $word2;
-        $this->adjacencyList[$word2][] = $word1;
+        if (!isset($this->adjacencyList[$word1])) {
+            $this->adjacencyList[$word1] = [];
+        }
+        if (!isset($this->adjacencyList[$word2])) {
+            $this->adjacencyList[$word2] = [];
+        }
+        if (!in_array($word2, $this->adjacencyList[$word1])) {
+            $this->adjacencyList[$word1][] = $word2;
+        }
+        if (!in_array($word1, $this->adjacencyList[$word2])) {
+            $this->adjacencyList[$word2][] = $word1;
+        }
+    }
+    
+    public function getRelatedWords(string $word): array {
+        return $this->adjacencyList[strtolower($word)] ?? [];
     }
 }
 8.6 Merge Sort
 File: src/ResultSorter.php
-
-Implementation:
+Owner: Chan Ring (DSA & Algorithms Lead)
 
 php
 class ResultSorter {
@@ -539,13 +594,29 @@ class ResultSorter {
         $right = $this->mergeSort(array_slice($results, $mid), $key);
         return $this->merge($left, $right, $key);
     }
+    
+    private function merge(array $left, array $right, string $key): array {
+        $result = [];
+        $i = $j = 0;
+        while ($i < count($left) && $j < count($right)) {
+            if ($left[$i][$key] >= $right[$j][$key]) {
+                $result[] = $left[$i];
+                $i++;
+            } else {
+                $result[] = $right[$j];
+                $j++;
+            }
+        }
+        while ($i < count($left)) { $result[] = $left[$i]; $i++; }
+        while ($j < count($right)) { $result[] = $right[$j]; $j++; }
+        return $result;
+    }
 }
 Complexity: O(n log n)
 
 8.7 Binary Search
 File: src/TermSearcher.php
-
-Implementation:
+Owner: Chan Ring (DSA & Algorithms Lead)
 
 php
 class TermSearcher {
@@ -560,6 +631,17 @@ class TermSearcher {
             else $right = $mid - 1;
         }
         return false;
+    }
+    
+    public function quickSort(array $terms): array {
+        if (count($terms) <= 1) return $terms;
+        $pivot = $terms[0];
+        $left = $right = [];
+        for ($i = 1; $i < count($terms); $i++) {
+            if ($terms[$i] < $pivot) $left[] = $terms[$i];
+            else $right[] = $terms[$i];
+        }
+        return array_merge($this->quickSort($left), [$pivot], $this->quickSort($right));
     }
 }
 Complexity: O(log n)
@@ -661,101 +743,132 @@ Cormen, T.H., et al. "Introduction to Algorithms." MIT Press, 2022.
 Witten, I.H., et al. "Managing Gigabytes." Morgan Kaufmann, 1999.
 
 Appendix A: Code Snippets
-A.1 Hash Map Implementation
-php
-class InvertedIndex {
-    private array $index = [];
-    
-    public function addTerm(string $term, int $documentId): void {
-        if (!isset($this->index[$term])) {
-            $this->index[$term] = [];
-        }
-        if (!in_array($documentId, $this->index[$term])) {
-            $this->index[$term][] = $documentId;
-        }
-    }
-}
-A.2 Search Algorithm
+A.1 Complete Search Algorithm
 php
 public function search($query) {
+    if (empty($query)) return [];
+    
+    $this->history->push($query);
     $terms = $this->tokenize($query);
+    
+    if (empty($terms)) return [];
+    
+    $allTerms = $this->searcher->quickSort($this->invertedIndex->getAllTerms());
+    foreach ($terms as $term) {
+        $this->searcher->binarySearch($allTerms, $term);
+    }
+    
     $documentIds = $this->invertedIndex->searchAnd($terms);
+    if (empty($documentIds)) return [];
+    
     $scores = $this->calculateScores($documentIds, $terms);
     
     $this->heap = new TopResultsHeap();
     foreach ($scores as $docId => $score) {
-        $this->heap->addResult($docId, $score, $this->getTitle($docId));
+        $title = $this->getDocumentTitle($docId);
+        $this->heap->addResult($docId, $score, $title);
     }
     
-    return $this->sorter->mergeSort($this->heap->getTopK(5));
+    $topResults = $this->heap->getTopK(5);
+    $sortedResults = $this->sorter->mergeSort($topResults);
+    
+    $this->saveSearchToHistory($query, count($sortedResults));
+    
+    return $sortedResults;
+}
+A.2 Tokenization Function
+php
+private function tokenize($text) {
+    $text = strtolower($text);
+    $words = preg_split('/[\s,\.!?;:]+/', $text, -1, PREG_SPLIT_NO_EMPTY);
+    $stopwords = ['the', 'and', 'of', 'to', 'in', 'a', 'is', 'for', 'on', 'with'];
+    return array_filter($words, function($word) use ($stopwords) {
+        return strlen($word) > 2 && !in_array($word, $stopwords);
+    });
+}
+A.3 Score Calculation
+php
+private function calculateScores($documentIds, $terms) {
+    $scores = [];
+    foreach ($documentIds as $docId) {
+        $score = 0;
+        foreach ($terms as $term) {
+            $stmt = $this->db->prepare(
+                "SELECT COUNT(*) as count FROM term_positions 
+                 WHERE term = ? AND document_id = ?"
+            );
+            $stmt->execute([$term, $docId]);
+            $result = $stmt->fetch();
+            $score += $result ? $result['count'] : 0;
+        }
+        $scores[$docId] = $score;
+    }
+    return $scores;
 }
 Appendix B: Installation Instructions
 B.1 Prerequisites
 XAMPP (PHP 8.0+, MySQL 5.7+)
 
-Web browser
+Web browser (Chrome/Firefox/Edge)
 
 B.2 Setup Steps
 Clone repository to C:\xampp\htdocs\search-engine
 
-Start XAMPP (Apache + MySQL)
+bash
+git clone https://github.com/arcendala-byte/search-engine-dsa.git
+Start XAMPP Control Panel
 
-Create database search_engine_db in phpMyAdmin
+Start Apache service
 
-Run SQL schema from Section 5.2
+Start MySQL service
 
-Access http://localhost/search-engine/index_web.php
+Create database in phpMyAdmin
+
+Open http://localhost/phpmyadmin
+
+Create database: search_engine_db
+
+Run SQL schema
+
+sql
+CREATE TABLE documents (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE term_positions (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    term VARCHAR(100) NOT NULL,
+    document_id INT NOT NULL,
+    position INT NOT NULL,
+    INDEX idx_term (term),
+    FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE
+);
+
+CREATE TABLE search_history (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    query VARCHAR(255) NOT NULL,
+    search_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    results_count INT DEFAULT 0
+);
+Configure database connection
+
+Edit config/db_connection.php
+
+Update credentials if needed
+
+Access the application
+
+Web: http://localhost/search-engine/index_web.php
+
+CLI: php index.php
 
 Appendix C: Team Contributions
-Team Member	Role	Specific Contributions
-[Name]	Team Lead	Architecture, integration, GitHub management
-[Name]	Design Lead	Chapter 23 methodology, design report
-[Name]	DSA Lead	Hash map, heap, graph implementation
-[Name]	Algorithms Lead	Merge sort, binary search
-[Name]	Backend	Database, API, engine logic
-[Name]	Frontend	Web interface, CSS
-[Name]	Testing	Test cases, QA
-[Name]	Documentation	README, this report
-[Name]	Performance	Benchmarking
-[Name]	Demo	Video recording
-End of Report
-
-text
-
----
-
-## 📄 **Step 3: Convert to PDF using VS Code**
-
-### Method A: Using Markdown PDF Extension
-
-1. Open `PROJECT_REPORT.md` in VS Code
-2. Press `Ctrl+Shift+P`
-3. Type `Markdown PDF: Export (pdf)`
-4. Press Enter
-
-The PDF will be saved in the same folder.
-
-### Method B: Using Browser
-
-1. Open `PROJECT_REPORT.md` in VS Code
-2. Right-click → `Open Preview` (Ctrl+Shift+V)
-3. Right-click in preview → `Print`
-4. Select `Save as PDF`
-
----
-
-## 📄 **Method 2: Using Online Converter (No Installation)**
-
-1. Upload your markdown file to:
-   - https://www.markdowntopdf.com/
-   - https://md2pdf.netlify.app/
-2. Click Convert
-3. Download PDF
-
----
-
-## 📄 **Method 3: Using Pandoc (Advanced)**
-
-```bash
-# Install pandoc first, then run:
-pandoc PROJECT_REPORT.md -o PROJECT_REPORT.pdf --pdf-engine=xelatex
+Team Member	Role	Registration Number	Specific Contributions
+Arcel Ndala	Team Lead & Backend	BIT/2024/44434	Project coordination, MySQL schema, API endpoints, SearchEngine_MySQL.php, GitHub management
+Chan Ring	DSA & Algorithms Lead	BIT/2024/46674	All 7 data structures: InvertedIndex, SearchHistory, IndexQueue, TopResultsHeap, WordGraph, ResultSorter, TermSearcher
+Lucy Mbugua	Frontend & UI Lead	BIT/2024/44576	Web interface (index_web.php), CSS styling, JavaScript interactions, complexity visualization charts
+Humprhey Mungai	Testing & Performance Lead	BIT/2024/42345	Test cases (15+), test_structures.php, QA validation, benchmarking, complexity analysis
+Shanice Anna	Documentation & Demo Lead	BIT/2024/43110	Design report, README.md, architecture diagrams, video recording, VLMS submission
